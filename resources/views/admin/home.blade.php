@@ -115,9 +115,9 @@
                         <div class="w-full justify-center flex items-center">
                             <div class="py-3 xl:w-[55%] md:w-[55%] w-full" id="pie-chart"></div>
                         </div>
-                        <div class="grid grid-cols-1 items-center border-gray-200 border-t justify-start">
+                        <!-- <div class="grid grid-cols-1 items-center border-gray-200 border-t justify-start">
                             <div class="flex justify-start items-center pt-5">
-                                <!-- Button -->
+                                Button
                                 <button id="dropdownDefaultButton" data-dropdown-toggle="lastDaysdropdown"
                                     data-dropdown-placement="bottom"
                                     class="text-sm font-medium text-gray-500 hover:text-gray-900 text-center inline-flex items-center"
@@ -149,7 +149,7 @@
                                     </ul>
                                 </div>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
 
                     <!-- Grafik Kehadiran 6 Bulan -->

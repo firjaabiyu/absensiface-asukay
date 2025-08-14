@@ -33,7 +33,7 @@ class ReportController extends Controller
                         $query->whereDate('tanggal', Carbon::create($tahun, $bulanMap[$bulanText], $tanggal)->toDateString());
                     }
                 } 
-                // Tambahkan kondisi untuk menangani pencarian "maret 2025"
+                // Tambahkan kondisi untuk menangani pencarian
                 elseif (preg_match('/([a-zA-Z]+)\s+(\d{4})/', strtolower($search), $matches)) {
                     $bulanText = $matches[1]; // Nama bulan
                     $tahun = $matches[2]; // Tahun

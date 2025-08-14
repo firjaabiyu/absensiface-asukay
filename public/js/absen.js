@@ -1,40 +1,32 @@
-// ===== Face Recognition for Attendance =====
 let faceRecognitionActive = false;
 let knownFaces = [];
 let currentUser = null;
 let attendanceType = null; // 'datang' or 'pulang'
-let recognizedEmployees = new Set(); // Track employees who have already been greeted
+let recognizedEmployees = new Set(); 
 
 // Initialize the system
 document.addEventListener('DOMContentLoaded', async function() {
-    // Initialize face-api
     try {
         await initFaceApi();
         console.log('Face API initialized successfully');
         
-        // Fetch known faces from the server
         await fetchKnownFaces();
-        
-        // Start the video with face detection
+
         await startVideo();
         
-        // Setup attendance buttons after video is set up
         setupAttendanceButtons();
     } catch (error) {
         console.error('Error initializing face recognition:', error);
         showError('Could not initialize face recognition system. Please refresh and try again.');
     }
     
-    // Update datetime display
     updateDateTime();
     setInterval(updateDateTime, 1000);
     
-    // Show table notification
 });
 
-// Add function to check if face is "live" based on confidence threshold
 function isLiveFace(confidence) {
-    const LIVENESS_THRESHOLD = 0.50; // High threshold for better security
+    const LIVENESS_THRESHOLD = 0.50;
     return confidence >= LIVENESS_THRESHOLD;
 }
 
@@ -88,7 +80,6 @@ async function startVideo() {
             adjustCanvasSize();
             drawFaceGuide();
             
-            // Start face recognition
             startFaceRecognition();
         };
         
@@ -128,20 +119,16 @@ function drawFaceGuide() {
     
     const ctx = canvas.getContext('2d');
     
-    // Clear canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    // Compensate for mirror effect
     ctx.save();
     ctx.setTransform(-1, 0, 0, 1, canvas.width, 0);
     
-    // Draw oval face guide
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     const faceWidth = canvas.width * 0.40;
     const faceHeight = canvas.height * 0.85;
     
-    // Create oval mask
     ctx.save();
     ctx.beginPath();
     ctx.ellipse(centerX, centerY, faceWidth / 2, faceHeight / 2, 0, 0, Math.PI * 2);
@@ -149,7 +136,6 @@ function drawFaceGuide() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
     
-    // Draw dashed oval outline
     ctx.strokeStyle = 'white';
     ctx.lineWidth = 2;
     ctx.setLineDash([8, 4]);
@@ -159,13 +145,11 @@ function drawFaceGuide() {
     
     ctx.restore();
     
-    // Only continue animation loop if face recognition is not active
     if (!faceRecognitionActive) {
         requestAnimationFrame(drawFaceGuide);
     }
 }
 
-// Start face recognition process
 function startFaceRecognition() {
     const video = document.getElementById('video');
     const canvas = document.getElementById('canvas');

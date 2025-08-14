@@ -18,7 +18,6 @@ class UserController extends Controller
 
     public function store(Request $request)
     {
-        // Validasi input
         $request->validate([
             'nama' => 'required|string',
             'nip' => 'required|string',
@@ -27,7 +26,6 @@ class UserController extends Controller
 
         $this->checkAbsentStatus();
 
-        // Check if employee exists based on nama and NIP
         $pegawai = Pegawai::where('nama', $request->nama)->where('nip', $request->nip)->first();
 
         if (!$pegawai) {
@@ -38,9 +36,7 @@ class UserController extends Controller
         $now = Carbon::now();
         $absenType = $request->absen_type;
 
-        // Define time windows based on employee job
         if ($pegawai->jabatan === 'security') {
-            // Fixed time windows for all security staff
             // Shift 1: 07:00-19:00
             $checkInStartShift1 = '06:30';
             $checkInEndShift1 = '07:20';
@@ -53,8 +49,8 @@ class UserController extends Controller
             $checkOutStartShift2 = '06:30';
             $checkOutEndShift2 = '07:20';
             
-            $onTimeBeforeHour = '07:00'; // For shift 1
-            $onTimeBeforeHourShift2 = '19:00'; // For shift 2
+            $onTimeBeforeHour = '07:00'; // shift 1
+            $onTimeBeforeHourShift2 = '19:00'; // shift 2
         } else {
             // Regular staff
             $checkInStart = '04:30';
@@ -67,7 +63,6 @@ class UserController extends Controller
         // 1. ABSEN DATANG
         if ($absenType === 'datang') {
             if ($pegawai->jabatan === 'security') {
-                // Security can check in during either shift 1 or shift 2 time windows
                 $isWithinShift1CheckIn = $now->between(Carbon::parse($checkInStartShift1), Carbon::parse($checkInEndShift1));
                 $isWithinShift2CheckIn = $now->between(Carbon::parse($checkInStartShift2), Carbon::parse($checkInEndShift2));
                 
@@ -75,7 +70,6 @@ class UserController extends Controller
                     return back()->with('error', 'Waktu absen datang untuk security adalah pukul 06:30-07:20 atau 18:30-19:20!');
                 }
                 
-                // Check if already checked in today
                 if (Kehadiran::where('pegawai_id', $pegawai->id)->where('tanggal', $today)->exists()) {
                     $nomor_meja = Kehadiran::where('pegawai_id', $pegawai->id)->where('tanggal', $today)->first()->nomor_duduk;
                     return back()->with([
@@ -84,24 +78,20 @@ class UserController extends Controller
                     ]);
                 }
                 
-                // Determine which shift the security is checking in for
                 $currentShift = $isWithinShift1CheckIn ? 'shift_1' : 'shift_2';
                 
-                // Set on-time criteria based on shift
                 $isOnTime = $currentShift === 'shift_1' 
                     ? $now->lte(Carbon::parse($onTimeBeforeHour)) 
                     : $now->lte(Carbon::parse($onTimeBeforeHourShift2));
                 
-                // Tentukan status & keterangan
                 $status = 'hadir';
                 $keterangan = $isOnTime ? 'tepat waktu' : 'terlambat';
                 
-                // Create attendance record with the shift information in the notes field
                 Kehadiran::create([
                     'pegawai_id' => $pegawai->id,
                     'tanggal' => $today,
                     'jam_masuk' => $now->format('H:i:s'),
-                    'nomor_duduk' => 0, // Security doesn't get assigned a random desk
+                    'nomor_duduk' => 0,
                     'status' => $status,
                     'keterangan' => $keterangan . ' (' . $currentShift . ')'
                 ]);
@@ -111,7 +101,6 @@ class UserController extends Controller
                     'meja' => "0"
                 ]);
             } else {
-                // Regular staff check-in
                 if ($now->between(Carbon::parse($checkInStart), Carbon::parse($checkInEnd))) {
                     if (Kehadiran::where('pegawai_id', $pegawai->id)->where('tanggal', $today)->exists()) {
                         $nomor_meja = Kehadiran::where('pegawai_id', $pegawai->id)->where('tanggal', $today)->first()->nomor_duduk;
@@ -121,7 +110,6 @@ class UserController extends Controller
                         ]);
                     }
 
-                    // Ambil nomor kursi acak hanya untuk staff dan magang
                     $nomor_duduk = 0;
                     if (in_array($pegawai->jabatan, ['staff', 'magang'])) {
                         $nomor_terpakai = Kehadiran::where('tanggal', $today)->pluck('nomor_duduk')->toArray();
@@ -134,11 +122,9 @@ class UserController extends Controller
                         $nomor_duduk = $nomor_tersedia[array_rand($nomor_tersedia)];
                     }
 
-                    // Tentukan status & keterangan
                     $status = 'hadir';
                     $keterangan = $now->lte(Carbon::parse($onTimeBeforeHour)) ? 'tepat waktu' : 'terlambat';
 
-                    // Simpan kehadiran
                     Kehadiran::create([
                         'pegawai_id' => $pegawai->id,
                         'tanggal' => $today,
@@ -161,7 +147,6 @@ class UserController extends Controller
         // 2. ABSEN PULANG
         else if ($absenType === 'pulang') {
             if ($pegawai->jabatan === 'security') {
-                // Security can check out during either shift 1 or shift 2 time windows
                 $isWithinShift1CheckOut = $now->between(Carbon::parse($checkOutStartShift1), Carbon::parse($checkOutEndShift1));
                 $isWithinShift2CheckOut = $now->between(Carbon::parse($checkOutStartShift2), Carbon::parse($checkOutEndShift2));
                 
@@ -169,10 +154,8 @@ class UserController extends Controller
                     return back()->with('error', 'Waktu absen pulang untuk security adalah pukul 18:30-19:20 atau 06:30-07:20!');
                 }
                 
-                // Determine which date to check based on the current time
                 $attendanceDate = $today;
                 
-                // If checking out in the morning hours (shift 2 checkout), check yesterday's record
                 if ($isWithinShift2CheckOut && $now->hour < 12) {
                     $attendanceDate = Carbon::yesterday()->toDateString();
                 }
@@ -193,7 +176,6 @@ class UserController extends Controller
                 
                 return back()->with('success', 'Absen pulang berhasil! Selamat beristirahat.');
             } else {
-                // Regular staff check-out
                 if ($now->between(Carbon::parse($checkOutStart), Carbon::parse($checkOutEnd))) {
                     $kehadiran = Kehadiran::where('pegawai_id', $pegawai->id)->where('tanggal', $today)->first();
 
